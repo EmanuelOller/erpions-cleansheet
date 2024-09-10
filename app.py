@@ -34,7 +34,7 @@ def index():
     return render_template('index.html')
 
 # Ruta para subir y limpiar archivos
-@app.route('/upload', methods=['POST'])
+@app.route('/clean', methods=['POST'])
 def upload_file():
     file = request.files['file']
     if file:
