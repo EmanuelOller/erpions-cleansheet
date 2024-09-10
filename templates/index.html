@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Procesamiento de Archivos Excel</title>
+    <style>
+        /* Estilos Generales */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f3f3; /* Fondo neutro */
+            color: #333;
+        }
+
+        .container {
+            width: 60%;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center; /* Centrar todo el contenido dentro del contenedor */
+        }
+
+        h1 {
+            background-color: #e7f5e9; /* Verde claro */
+            color: #1D6F42; /* Verde Excel */
+            font-size: 32px;
+            text-align: center;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center; /* Centrar subtítulos */
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .cta-button {
+            background-color: #FFD700; /* Amarillo dorado para destacar */
+            color: #333;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px auto;
+            font-weight: bold;
+            transition: background-color 0.3s ease; /* Suaviza el cambio de color al pasar el ratón */
+        }
+
+        .cta-button:hover {
+            background-color: #FFBF00; /* Amarillo dorado más oscuro al pasar el ratón */
+        }
+
+        form {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa; /* Fondo suave */
+            text-align: center; /* Centrar el contenido dentro del formulario */
+        }
+
+        input[type="file"],
+        select {
+            padding: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #1D6F42; /* Verde de Excel */
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background-color: #145C31;
+        }
+
+        .section-highlight {
+            background-color: #f0f4f8; /* Fondo gris claro */
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Herramienta gratuita para procesamiento de Archivos Excel</h1>
+        <p class="section-highlight">¡Optimiza tu trabajo en Excel con ésta herramienta! Aprovecha la opción gratuita o contáctame para soluciones personalizadas.</p>
+
+        <!-- Sección Combinada para Limpieza y Preparación de Datos -->
+        <h2>Limpia y prepara tu Excel</h2>
+        <form action="/clean" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Subir y limpiar archivo</button>
+        </form>
+        <a href="mailto:emanueloller@erpions.com" class="cta-button">Contáctame para más funciones</a>
+
+        <!-- Sección Combinada para Conversión de Formatos -->
+        <h2>Convierte entre formatos Excel y CSV</h2>
+        <form action="/convert_format" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <select name="conversion_type" required>
+                <option value="excel_to_csv">Convertir Excel a CSV</option>
+                <option value="csv_to_excel">Convertir CSV a Excel</option>
+            </select>
+            <button type="submit">Convertir archivo</button>
+        </form>
+        <a href="mailto:emanueloller@erpions.com" class="cta-button">Solicita una función personalizada</a>
+
+        <!-- Sección para Combinar Archivos Excel -->
+        <h2>Combina tus archivos Excel</h2>
+        <form action="/merge" method="post" enctype="multipart/form-data">
+            <input type="file" name="files" multiple required>
+            <button type="submit">Combinar archivos</button>
+        </form>
+        <a href="mailto:emanueloller@erpions.com" class="cta-button">Contáctame para más ayuda</a>
+
+        <!-- Sección de Contacto -->
+        <h2 id="contacto">¿Necesitas una solución personalizada?</h2>
+        <p>Puedo ayudarte a crear herramientas personalizadas para Excel, o podríamos ir mas allá! Si quieres análisis de datos, inteligencia artificial, automatizaciones, integraciones y más. ¡Contáctame hoy mismo!</p>
+        <a href="mailto:emanueloller@erpions.com" class="cta-button">Consulta gratuita</a>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 Emanuel Oller. Todos los derechos reservados.</p>
+    </div>
+</body>
+</html>
