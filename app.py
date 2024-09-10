@@ -117,61 +117,83 @@ def clean_and_prepare_excel(workbook):
             except:
                 pass
     return df
+
 # Combinación de archivos
 @app.route('/merge', methods=['POST'])
 def merge_files():
     files = request.files.getlist('files')  # Permitir múltiples archivos
     if files:
-        # Leer los archivos en memoria en DataFrames
+        # Leer los archivos en memoria como DataFrames
         dataframes = [pd.read_excel(file) for file in files]
 
-        # Combinar todos los dataframes en uno solo
+        # Combinar todos los DataFrames en uno solo
         merged_df = pd.concat(dataframes, ignore_index=True)
 
-        # Guardar el DataFrame combinado en un objeto de bytes en memoria
-        merged_file_obj = BytesIO()
-        merged_df.to_excel(merged_file_obj, index=False, engine='openpyxl')
-        merged_file_obj.seek(0)  # Regresar al inicio del archivo
-
-        # Subir el archivo combinado a S3
+        # Nombre del archivo combinado
         merged_file_name = "merged_file.xlsx"
-    
-        # Proporcionar al usuario un enlace de descarga o mensaje de éxito
-        return f"Archivo {merged_file_name} subido y procesado con éxito a S3."
+        merged_file_path = os.path.join(PROCESSED_FOLDER, merged_file_name)
+
+        # Guardar el DataFrame combinado en un archivo Excel en el almacenamiento local
+        merged_df.to_excel(merged_file_path, index=False, engine='openpyxl')
+        print(f"Archivo combinado guardado como {merged_file_path}.")
+        
+        # Usamos after_this_request para ejecutar una acción después de que se complete la solicitud
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.remove(merged_file_path)
+                print(f"Archivo convertido {merged_file_path} eliminado después de la descarga.")
+            except Exception as e:
+                print(f"Error al intentar eliminar el archivo: {e}")
+            return response
+
+        # Proporcionar un enlace de descarga para el archivo combinado
+        return send_file(merged_file_path, as_attachment=True, download_name=merged_file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     return "No se subieron archivos"
 
-# Función para convertir el formato de los archivos
 @app.route('/convert_format', methods=['POST'])
 def convert_format():
     file = request.files['file']
     conversion_type = request.form['conversion_type']
     if file:
-        # Leer el archivo en un DataFrame en memoria
+        # Inicializar variables para guardar el archivo convertido
+        converted_file_path = None
+        converted_filename = None
+
+        # Leer el archivo en un DataFrame en memoria y convertir según el tipo
         if conversion_type == 'excel_to_csv':
             df = pd.read_excel(file)
-            # Convertir a CSV en memoria
-            converted_file = BytesIO()
-            df.to_csv(converted_file, index=False)
-            converted_file.seek(0)  # Volver al inicio del archivo
-
             # Nombre del archivo convertido
             converted_filename = os.path.splitext(file.filename)[0] + ".csv"
+            converted_file_path = os.path.join(PROCESSED_FOLDER, converted_filename)
+            # Guardar como CSV localmente
+            df.to_csv(converted_file_path, index=False)
+            print(f"Archivo convertido guardado como {converted_file_path}.")
 
         elif conversion_type == 'csv_to_excel':
             df = pd.read_csv(file)
-            # Convertir a Excel en memoria
-            converted_file = BytesIO()
-            df.to_excel(converted_file, index=False, engine='openpyxl')
-            converted_file.seek(0)  # Volver al inicio del archivo
-
             # Nombre del archivo convertido
             converted_filename = os.path.splitext(file.filename)[0] + ".xlsx"
+            converted_file_path = os.path.join(PROCESSED_FOLDER, converted_filename)
+            # Guardar como Excel localmente
+            df.to_excel(converted_file_path, index=False, engine='openpyxl')
+            print(f"Archivo convertido guardado como {converted_file_path}.")
 
         else:
             return "Tipo de conversión no soportado."
 
-        # Enviar una respuesta de éxito
-        return f"Archivo {converted_filename} subido y convertido con éxito a S3."
+        # Usamos after_this_request para ejecutar una acción después de que se complete la solicitud
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.remove(converted_file_path)
+                print(f"Archivo convertido {converted_file_path} eliminado después de la descarga.")
+            except Exception as e:
+                print(f"Error al intentar eliminar el archivo: {e}")
+            return response
+
+        # Proporcionar el archivo convertido para su descarga
+        return send_file(converted_file_path, as_attachment=True, download_name=converted_filename, mimetype='text/csv' if conversion_type == 'excel_to_csv' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     return "No se subió ningún archivo"
 
