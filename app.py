@@ -26,7 +26,7 @@ def index():
     return render_template('index.html')
 
 # Ruta para subir y limpiar archivos
-@app.route('/upload', methods=['POST'])
+@app.route('/clean', methods=['POST'])
 def upload_file():
     file = request.files['file']
     if file:
@@ -139,7 +139,7 @@ def merge_files():
         # Proporcionar al usuario un enlace de descarga o mensaje de éxito
         return f"Archivo {merged_file_name} subido y procesado con éxito a S3."
     return "No se subieron archivos"
-    
+
 # Función para convertir el formato de los archivos
 @app.route('/convert_format', methods=['POST'])
 def convert_format():
