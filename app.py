@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, after_this_request
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -7,26 +7,18 @@ import openpyxl
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import NamedStyle
-import boto3
 from io import BytesIO
 
 
 app = Flask(__name__)
 
-# Configuración de S3
-s3 = boto3.client(
-    's3',
-    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-    region_name=os.getenv('AWS_REGION')
-)
+# Directorio local para almacenar archivos temporalmente
+UPLOAD_FOLDER = 'uploads/'
+PROCESSED_FOLDER = 'processed/'
 
-BUCKET_NAME = 'erpions-cleansheet'
-
-def upload_to_s3(file, file_name):
-    # Subir el archivo directamente desde memoria
-    s3.upload_fileobj(file, BUCKET_NAME, file_name)
-    print(f"Archivo {file_name} subido a S3.")
+# Crear carpetas si no existen
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
 # Ruta principal
 @app.route('/')
@@ -34,24 +26,36 @@ def index():
     return render_template('index.html')
 
 # Ruta para subir y limpiar archivos
-@app.route('/clean', methods=['POST'])
+@app.route('/upload', methods=['POST'])
 def upload_file():
     file = request.files['file']
     if file:
-        # Leer el archivo en memoria usando OpenPyXL
-        wb = load_workbook(file, data_only=True)
-        cleaned_df = clean_and_prepare_excel(wb)  # Pasar el workbook a la función de limpieza
+        # Guardar el archivo subido en el directorio local
+        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(file_path)
+        print(f"Archivo {file.filename} guardado localmente en {file_path}.")
 
-        # Guardar el DataFrame limpio en memoria en formato Excel
-        cleaned_file = BytesIO()
-        cleaned_df.to_excel(cleaned_file, index=False, engine='openpyxl')
-        cleaned_file.seek(0)
+        # Procesar el archivo cargado
+        processed_file_path = process_file(file_path)
 
-        # Subir el archivo limpio a S3 directamente desde la memoria
-        upload_to_s3(cleaned_file, 'cleaned_' + file.filename)
-
-        return "Archivo subido, limpiado y procesado con éxito."
+        # Enviar el archivo procesado para su descarga
+        return send_file(processed_file_path, as_attachment=True)
     return "No se subió ningún archivo"
+def process_file(file_path):
+    # Cargar el archivo Excel
+    wb = load_workbook(file_path, data_only=True)
+    cleaned_df = clean_and_prepare_excel(wb)
+
+    # Guardar el DataFrame limpio en el directorio local
+    processed_file_path = os.path.join(PROCESSED_FOLDER, 'processed_' + os.path.basename(file_path))
+    cleaned_df.to_excel(processed_file_path, index=False, engine='openpyxl')
+    print(f"Archivo procesado guardado como {processed_file_path}.")
+
+    # Eliminar el archivo original después del procesamiento
+    os.remove(file_path)
+    print(f"Archivo original {file_path} eliminado.")
+    download_file(processed_file_path)
+    return processed_file_path
 
 # Función para limpiar y preparar el df
 def clean_and_prepare_excel(workbook):
@@ -113,8 +117,6 @@ def clean_and_prepare_excel(workbook):
             except:
                 pass
     return df
-
-
 # Combinación de archivos
 @app.route('/merge', methods=['POST'])
 def merge_files():
@@ -133,13 +135,11 @@ def merge_files():
 
         # Subir el archivo combinado a S3
         merged_file_name = "merged_file.xlsx"
-        upload_to_s3(merged_file_obj, merged_file_name)
-
+    
         # Proporcionar al usuario un enlace de descarga o mensaje de éxito
         return f"Archivo {merged_file_name} subido y procesado con éxito a S3."
     return "No se subieron archivos"
-
-
+    
 # Función para convertir el formato de los archivos
 @app.route('/convert_format', methods=['POST'])
 def convert_format():
@@ -170,13 +170,29 @@ def convert_format():
         else:
             return "Tipo de conversión no soportado."
 
-        # Subir el archivo convertido a S3
-        upload_to_s3(converted_file, converted_filename)
-
         # Enviar una respuesta de éxito
         return f"Archivo {converted_filename} subido y convertido con éxito a S3."
 
     return "No se subió ningún archivo"
 
+def download_file(filename):
+    processed_file_path = os.path.join(PROCESSED_FOLDER, filename)
+
+    if os.path.exists(processed_file_path):
+        # Usamos after_this_request para ejecutar una acción después de que se complete la solicitud
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.remove(processed_file_path)
+                print(f"Archivo procesado {processed_file_path} eliminado después de la descarga.")
+            except Exception as e:
+                print(f"Error al intentar eliminar el archivo: {e}")
+            return response
+
+        # Enviamos el archivo para su descarga
+        return send_file(processed_file_path, as_attachment=True)
+    else:
+        return "El archivo no existe", 404
+        
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
